@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Realtà Quotata - Value Bet Analyzer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .controls {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .date-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        .date-btn {
+            padding: 8px 16px;
+            border: 2px solid #3498db;
+            background: white;
+            color: #3498db;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .date-btn.active {
+            background: #3498db;
+            color: white;
+        }
+        .date-btn:hover {
+            background: #2980b9;
+            color: white;
+        }
+        .leagues-section {
+            margin: 15px 0;
+        }
+        .leagues-container {
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            padding: 10px;
+            border-radius: 5px;
+            background: #fafafa;
+        }
+        .league-item {
+            display: flex;
+            align-items: center;
+            margin: 5px 0;
+            padding: 5px;
+        }
+        .league-item input {
+            margin-right: 8px;
+        }
+        .league-controls {
+            margin: 10px 0;
+        }
+        .btn {
+            background-color: #4CAF50;
+            color: white;
+            padding: 12px 24px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 14px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+        .btn:hover {
+            background-color: #45a049;
+        }
+        .btn:disabled {
+            background-color: #95a5a6;
+            cursor: not-allowed;
+        }
+        .btn-secondary {
+            background-color: #6c757d;
+        }
+        .btn-secondary:hover {
+            background-color: #5a6268;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+        .results {
+            display: none;
+        }
+        .value-bet-highlight {
+            background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
+            color: white;
+            font-weight: bold;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border-left: 5px solid #fbbf24;
+        }
+        .insufficient-data {
+            background: linear-gradient(135deg, #FFB347 0%, #FF8C00 100%);
+            color: white;
+            padding: 12px;
+            border-radius: 5px;
+            margin: 5px 0;
+        }
+        .error-match {
+            background: linear-gradient(135deg, #FFB6C1 0%, #FF69B4 100%);
+            color: white;
+            padding: 12px;
+            border-radius: 5px;
+            margin: 5px 0;
+        }
+        .normal-match {
+            background: white;
+            padding: 12px;
+            border-radius: 5px;
+            margin: 5px 0;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .probability-item {
+            display: inline-block;
+            margin: 2px 3px;
+            padding: 3px 6px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 3px;
+            font-size: 11px;
+        }
+        .high-prob {
+            background: rgba(255,255,255,0.4);
+            font-weight: bold;
+        }
+        .status-summary {
+            background: #e8f4fd;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .progress-container {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background-color: #f0f0f0;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4CAF50 0%, #45a049 100%);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🎯 Realtà Quotata</h1>
+        <p>Analizzatore Value Bet - Versione Web</p>
+    </div>
+
+    <div class="controls">
+        <h3>📅 Seleziona Data</h3>
+        <div class="date-selector">
+            <button class="date-btn active" data-date="today">Oggi</button>
+            <button class="date-btn" data-date="tomorrow">Domani</button>
+            <button class="date-btn" data-date="day2">Dopodomani</button>
+            <button class="date-btn" data-date="day3">Fra 3 giorni</button>
+            <button class="date-btn" data-date="day4">Fra 4 giorni</button>
+        </div>
+
+        <button class="btn btn-secondary" onclick="caricaPalinsesto()">📋 Carica Palinsesto</button>
+
+        <div id="leagues-section" class="leagues-section" style="display: none;">
+            <h3>🏆 Seleziona Leghe da Analizzare</h3>
+            <div class="league-controls">
+                <button class="btn btn-secondary" onclick="selezionaTutto()">Seleziona Tutto</button>
+                <button class="btn btn-secondary" onclick="deselezionaTutto()">Deseleziona Tutto</button>
+                <button class="btn btn-secondary" onclick="selezionaPrincipali()">Solo Leghe Top</button>
+            </div>
+            <div id="leagues-container" class="leagues-container">
+                <!-- Le leghe verranno caricate qui -->
+            </div>
+            <div style="margin-top: 15px;">
+                <span id="selected-matches-count">0 partite selezionate</span>
+                <button class="btn" id="analyze-btn" onclick="avviaAnalisi()" disabled>🔄 Analizza Partite Selezionate</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="loading" id="loading">
+        <div class="progress-container">
+            <p id="loading-text">⏳ Caricamento in corso...</p>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progress-fill"></div>
+            </div>
+            <p id="progress-text">0%</p>
+        </div>
+    </div>
+
+    <div class="results" id="results">
+        <h2>📊 Risultati Analisi</h2>
+        
+        <div id="summary" class="status-summary">
+            <!-- Summary verrà popolato dinamicamente -->
+        </div>
+        
+        <div id="value-bets-section">
+            <h3>🎯 Value Bet Trovati</h3>
+            <div id="value-bets-container"></div>
+        </div>
+        
+        <div id="all-matches-section">
+            <h3>📋 Tutte le Partite Analizzate</h3>
+            <div id="all-matches-container"></div>
+        </div>
+    </div>
+
+    <script>
+        let currentDate = 'today';
+        let allMatches = [];
+        let leagues = {};
+        let selectedMatches = [];
+
+        // Gestione selezione data
+        document.querySelectorAll('.date-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.date-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                currentDate = this.dataset.date;
+                
+                // Reset stato
+                document.getElementById('leagues-section').style.display = 'none';
+                document.getElementById('results').style.display = 'none';
+            });
+        });
+
+        function caricaPalinsesto() {
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('loading-text').textContent = '📋 Caricando palinsesto...';
+            document.getElementById('progress-fill').style.width = '30%';
+            document.getElementById('progress-text').textContent = '30%';
+            
+            const dateParam = getDateString(currentDate);
+            
+            fetch('/api/palinsesto?data=' + dateParam)
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('loading').style.display = 'none';
+                    
+                    if (data.success) {
+                        allMatches = data.partite;
+                        processaLeghe();
+                        mostraSelezionePartite();
+                    } else {
+                        alert('Errore nel caricamento: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    document.getElementById('loading').style.display = 'none';
+                    alert('Errore di connessione: ' + error);
+                });
+        }
+
+        function getDateString(dateType) {
+            const today = new Date();
+            let targetDate = new Date(today);
+            
+            switch(dateType) {
+                case 'today': break;
+                case 'tomorrow': targetDate.setDate(today.getDate() + 1); break;
+                case 'day2': targetDate.setDate(today.getDate() + 2); break;
+                case 'day3': targetDate.setDate(today.getDate() + 3); break;
+                case 'day4': targetDate.setDate(today.getDate() + 4); break;
+            }
+            
+            const dd = String(targetDate.getDate()).padStart(2, '0');
+            const mm = String(targetDate.getMonth() + 1).padStart(2, '0');
+            const yyyy = targetDate.getFullYear();
+            
+            return dd + '-' + mm + '-' + yyyy;
+        }
+
+        function processaLeghe() {
+            leagues = {};
+            
+            allMatches.forEach(match => {
+                if (!leagues[match.lega]) {
+                    leagues[match.lega] = [];
+                }
+                leagues[match.lega].push(match);
+            });
+        }
+
+        function mostraSelezionePartite() {
+            const container = document.getElementById('leagues-container');
+            const legheOrdered = Object.keys(leagues).sort();
+            
+            // Leghe principali
+            const leghePrincipali = [
+                'Premier League', 'Serie A', 'Bundesliga', 'La Liga', 'Ligue 1',
+                'Championship', 'Serie B', '2. Bundesliga', 'Segunda División', 'Ligue 2'
+            ];
+            
+            let html = '';
+            
+            // Prima le leghe principali
+            leghePrincipali.forEach(lega => {
+                if (leagues[lega]) {
+                    const count = leagues[lega].length;
+                    html += '<div class="league-item">';
+                    html += '<input type="checkbox" id="league-' + lega + '" data-league="' + lega + '" onchange="aggiornaConteggio()">';
+                    html += '<label for="league-' + lega + '"><strong>🏆 ' + lega + '</strong> (' + count + ' partite)</label>';
+                    html += '</div>';
+                }
+            });
+            
+            // Poi le altre in ordine alfabetico
+            html += '<hr style="margin: 10px 0;">';
+            legheOrdered.forEach(lega => {
+                if (!leghePrincipali.includes(lega)) {
+                    const count = leagues[lega].length;
+                    html += '<div class="league-item">';
+                    html += '<input type="checkbox" id="league-' + lega + '" data-league="' + lega + '" onchange="aggiornaConteggio()">';
+                    html += '<label for="league-' + lega + '">' + lega + ' (' + count + ' partite)</label>';
+                    html += '</div>';
+                }
+            });
+            
+            container.innerHTML = html;
+            document.getElementById('leagues-section').style.display = 'block';
+            aggiornaConteggio();
+        }
+
+        function selezionaTutto() {
+            document.querySelectorAll('#leagues-container input[type="checkbox"]').forEach(cb => {
+                cb.checked = true;
+            });
+            aggiornaConteggio();
+        }
+
+        function deselezionaTutto() {
+            document.querySelectorAll('#leagues-container input[type="checkbox"]').forEach(cb => {
+                cb.checked = false;
+            });
+            aggiornaConteggio();
+        }
+
+        function selezionaPrincipali() {
+            const leghePrincipali = [
+                'Premier League', 'Serie A', 'Bundesliga', 'La Liga', 'Ligue 1',
+                'Championship', 'Serie B', '2. Bundesliga', 'Segunda División', 'Ligue 2'
+            ];
+            
+            document.querySelectorAll('#leagues-container input[type="checkbox"]').forEach(cb => {
+                const lega = cb.dataset.league;
+                cb.checked = leghePrincipali.includes(lega);
+            });
+            aggiornaConteggio();
+        }
+
+        function aggiornaConteggio() {
+            const checkboxes = document.querySelectorAll('#leagues-container input[type="checkbox"]:checked');
+            selectedMatches = [];
+            
+            checkboxes.forEach(cb => {
+                const lega = cb.dataset.league;
+                selectedMatches.push(...leagues[lega]);
+            });
+            
+            const count = selectedMatches.length;
+            document.getElementById('selected-matches-count').textContent = count + ' partite selezionate';
+            document.getElementById('analyze-btn').disabled = count === 0;
+        }
+
+        function avviaAnalisi() {
+            if (selectedMatches.length === 0) {
+                alert('Seleziona almeno una lega da analizzare');
+                return;
+            }
+            
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('results').style.display = 'none';
+            document.getElementById('loading-text').textContent = '🔍 Analizzando ' + selectedMatches.length + ' partite...';
+            document.getElementById('progress-fill').style.width = '0%';
+            document.getElementById('progress-text').textContent = '0%';
+            
+            // Invia le partite selezionate per l'analisi
+            fetch('/api/analisi-custom', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    partite: selectedMatches
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('loading').style.display = 'none';
+                
+                if (data.success) {
+                    mostraRisultati(data);
+                } else {
+                    alert('Errore nell\'analisi: ' + data.error);
+                }
+            })
+            .catch(error => {
+                document.getElementById('loading').style.display = 'none';
+                alert('Errore di connessione: ' + error);
+            });
+        }
+
+        function mostraRisultati(data) {
+            // Summary
+            const summaryHtml = '<h4>📈 Riepilogo Analisi</h4>' +
+                '<p><strong>Partite selezionate:</strong> ' + data.partite_selezionate + '</p>' +
+                '<p><strong>Partite analizzate:</strong> ' + data.partite_analizzate + '</p>' +
+                '<p><strong>Value Bet trovati:</strong> ' + data.value_bets_found + ' partite</p>' +
+                '<p><strong>Dati insufficienti:</strong> ' + data.dati_insufficienti + ' partite</p>' +
+                '<p><strong>Errori:</strong> ' + data.errori + ' partite</p>';
+            
+            document.getElementById('summary').innerHTML = summaryHtml;
+
+            // Value Bets
+            if (data.solo_value_bets && data.solo_value_bets.length > 0) {
+                let valueBetsHtml = '';
+                data.solo_value_bets.forEach(partita => {
+                    let vbDetails = [];
+                    for (const market in partita.value_bets) {
+                        const details = partita.value_bets[market];
+                        const marketName = getMarketDisplayName(market);
+                        vbDetails.push('<strong>' + marketName + '</strong>: Quota reale ' + details.real_odds + ' vs Media book ' + details.avg_book_odds + ' (Value: +' + details.value_percentage + '%)');
+                    }
+                    
+                    valueBetsHtml += '<div class="value-bet-highlight">' +
+                        '<h4>🎯 ' + partita.casa + ' vs ' + partita.trasferta + '</h4>' +
+                        '<p><strong>Lega:</strong> ' + partita.lega + ' | <strong>Ora:</strong> ' + partita.ora + '</p>' +
+                        '<p><strong>Quote 1X2:</strong> ' + partita.quote_1x2['1'] + ' - ' + partita.quote_1x2['X'] + ' - ' + partita.quote_1x2['2'] + '</p>' +
+                        '<div style="margin: 10px 0;">' + vbDetails.join('<br>') + '</div>' +
+                        '<div style="font-size: 12px; margin-top: 8px;">' + formatProbabilities(partita.probabilities) + '</div>' +
+                        '</div>';
+                });
+                document.getElementById('value-bets-container').innerHTML = valueBetsHtml;
+            } else {
+                document.getElementById('value-bets-container').innerHTML = 
+                    '<p style="text-align: center; color: #888; padding: 20px;">Nessun value bet trovato nelle partite analizzate</p>';
+            }
+
+            // Tutte le partite
+            let allMatchesHtml = '';
+            data.partite.forEach(partita => {
+                let containerClass = 'normal-match';
+                if (partita.status.includes('✅')) containerClass = 'value-bet-highlight';
+                else if (partita.status.includes('⚠️')) containerClass = 'insufficient-data';
+                else if (partita.status.includes('❌')) containerClass = 'error-match';
+                
+                allMatchesHtml += '<div class="' + containerClass + '">' +
+                    '<strong>' + partita.casa + ' vs ' + partita.trasferta + '</strong>' +
+                    '<span style="float: right;">' + partita.status + '</span><br>' +
+                    '<small>' + partita.lega + ' | ' + partita.ora + ' | 1X2: ' + partita.quote_1x2['1'] + '-' + partita.quote_1x2['X'] + '-' + partita.quote_1x2['2'] + '</small>';
+                
+                if (partita.probabilities && Object.keys(partita.probabilities).length > 0) {
+                    allMatchesHtml += '<div style="margin-top: 5px; font-size: 11px;">' + formatProbabilities(partita.probabilities) + '</div>';
+                }
+                
+                allMatchesHtml += '</div>';
+            });
+            document.getElementById('all-matches-container').innerHTML = allMatchesHtml;
+
+            document.getElementById('results').style.display = 'block';
+        }
+
+        function getMarketDisplayName(market) {
+            const names = {
+                '1': 'Casa (1)',
+                'X': 'Pareggio (X)', 
+                '2': 'Trasferta (2)',
+                'under_2_5': 'Under 2.5',
+                'over_2_5': 'Over 2.5',
+                'bts_yes': 'Gol (Entrambe)',
+                'bts_no': 'NoGol'
+            };
+            return names[market] || market;
+        }
+
+        function formatProbabilities(probs) {
+            if (!probs) return '';
+            
+            let items = [];
+            if (probs['1_probability']) items.push('<span class="probability-item ' + (probs['1_probability'] > 50 ? 'high-prob' : '') + '">1: ' + probs['1_probability'].toFixed(1) + '%</span>');
+            if (probs['X_probability']) items.push('<span class="probability-item ' + (probs['X_probability'] > 50 ? 'high-prob' : '') + '">X: ' + probs['X_probability'].toFixed(1) + '%</span>');
+            if (probs['2_probability']) items.push('<span class="probability-item ' + (probs['2_probability'] > 50 ? 'high-prob' : '') + '">2: ' + probs['2_probability'].toFixed(1) + '%</span>');
+            if (probs['over_2_5_probability']) items.push('<span class="probability-item ' + (probs['over_2_5_probability'] > 60 ? 'high-prob' : '') + '">O2.5: ' + probs['over_2_5_probability'].toFixed(1) + '%</span>');
+            if (probs['under_2_5_probability']) items.push('<span class="probability-item ' + (probs['under_2_5_probability'] > 60 ? 'high-prob' : '') + '">U2.5: ' + probs['under_2_5_probability'].toFixed(1) + '%</span>');
+            if (probs['bts_yes_probability']) items.push('<span class="probability-item ' + (probs['bts_yes_probability'] > 60 ? 'high-prob' : '') + '">Gol: ' + probs['bts_yes_probability'].toFixed(1) + '%</span>');
+            if (probs['bts_no_probability']) items.push('<span class="probability-item ' + (probs['bts_no_probability'] > 60 ? 'high-prob' : '') + '">NoGol: ' + probs['bts_no_probability'].toFixed(1) + '%</span>');
+            
+            return items.join(' ');
+        }
+    </script>
+</body>
+</html>
