@@ -5,3 +5,4 @@ pandas==2.0.3
 lxml==4.9.3
 # Librerie dal tuo script originale (escluse quelle PyQt che non servono per web)
 # json, sys, os, re, statistics, time, typing sono già incluse in Python
+gunicorn==21.2.0
